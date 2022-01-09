@@ -7,11 +7,14 @@
     <title>Document</title>
   </head>
   <body>
-    <h1>Index</h1>
+    <h1>Product</h1>
     <ul>
       <li><a href="index.html">index</a></li>
       <li><a href="product.html">product</a></li>
     </ul>
+    <p>
+      <a href="checkout.html">Checkout</a>
+    </p>
     <script>
       function track(n, p) {
         var d={name:n,url:location.pathname+location.search,properties:p};
@@ -19,7 +22,7 @@
         var i=new Image();
         i.src="http://localhost:3000/image?d="+e;
       }
-      track('page', { page: 'index' })
+      track('page', { page: 'product-detail' })
     </script>
   </body>
 </html>

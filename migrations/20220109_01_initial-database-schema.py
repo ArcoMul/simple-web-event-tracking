@@ -17,9 +17,10 @@ steps = [
     step("""
         CREATE TABLE events (
             id INT AUTO_INCREMENT PRIMARY KEY, 
-            name VARCHAR(50),
-            created DATETIME DEFAULT CURRENT_TIMESTAMP,
             session_id INT,
+            created DATETIME DEFAULT CURRENT_TIMESTAMP,
+            name VARCHAR(50) NOT NULL,
+            url VARCHAR(255),
             properties JSON
         );""",
         "DROP TABLE events")
