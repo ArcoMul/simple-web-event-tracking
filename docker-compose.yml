@@ -1,0 +1,41 @@
+version: '3'
+services:
+  simple-web-event-tracking:
+    image: 'simple-web-event-tracking'
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: always
+    links:
+      - mariadb
+    depends_on:
+      - mariadb
+    ports:
+      - 3000:3000
+    volumes:
+      - .:/app
+    environment:
+      - HOST=0.0.0.0
+      - PORT=3000
+      - DB_HOST=mariadb
+      - DB_PORT=3306
+      - DB_USER=testuser
+      - DB_PASSWORD=testpassword
+      - DB_NAME=simple-web-event-tracking
+      - PYTHONDONTWRITEBYTECODE=1
+
+  mariadb:
+    image: 'mariadb:10.7.1'
+    restart: always
+    ports:
+      - 3306:3306
+    volumes:
+      - mariadb-data:/var/lib/mysql
+    environment:
+      - MYSQL_USER=testuser
+      - MYSQL_PASSWORD=testpassword
+      - MYSQL_ROOT_PASSWORD=testrootpassword
+      - MYSQL_DATABASE=simple-web-event-tracking
+
+volumes:
+  mariadb-data:

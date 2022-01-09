@@ -1,0 +1,4 @@
+fastapi==0.71.0
+uvicorn==0.16.0
+yoyo-migrations==7.3.2
+PyMySQL==1.0.2 

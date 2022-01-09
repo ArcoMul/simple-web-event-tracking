@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Document</title>
+  </head>
+  <body>
+    <h1>About</h1>
+    <ul>
+      <li><a href="index.html">index</a></li>
+      <li><a href="about.html">about</a></li>
+    </ul>
+    <script>
+      function track(data) {
+        var endpoint = "http://localhost:3000/image";
+        var encoded = btoa(JSON.stringify(data));
+        var trackData = endpoint + "?d=" + encoded;
+        var pixel = new Image();
+        pixel.src = trackData;
+      }
+      track({
+        type: "event",
+        name: "page",
+        properties: {
+          url: window.location.href,
+          resolution: {
+            width: screen.width,
+            height: screen.height,
+          },
+        }
+      });
+    </script>
+  </body>
+</html>
