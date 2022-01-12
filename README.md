@@ -73,11 +73,10 @@ track('page', { page: 'product-detail' })
 ```
 
 ```sql
-SELECT url, COUNT(*) as count FROM events GROUP BY properties->page ORDER BY count DESC
-```
-
-```sql
-SELECT JSON_UNQUOTE(JSON_EXTRACT(properties, "$.page")) as page, COUNT(*) as count FROM events GROUP BY JSON_EXTRACT(properties, "$.page") ORDER BY count DESC
+SELECT properties->>'page' as page, COUNT(*) as count
+FROM events
+GROUP BY properties->>'page'
+ORDER BY count DESC
 ```
 
 ### Tracking page conversion
@@ -91,30 +90,17 @@ track('page', { page: 'product-detail' })
 
 ```sql
 SELECT
-    properties->page as page,
-    COUNT(id) as product_detail_count,
-    COUNT(after.id) as checkout_count,
-    COUNT(after.id) / COUNT(id) as conversion
-FROM events
-WHERE properties->page IS 'product-detail'
-LEFT JOIN events as after
-ON after.session_id = events.session_id
-    AND after.created > events.created
-    AND properties->page IS 'checkout'
-GROUP BY properties->page
-```
-
-```sql
-SELECT
-    JSON_UNQUOTE(JSON_EXTRACT(properties, "$.page")) as page,
-    COUNT(id) as product_detail_count,
-    COUNT(after.id) as checkout_count,
-    COUNT(after.id) / COUNT(id) as conversion
-FROM events
-WHERE JSON_UNQUOTE(JSON_EXTRACT(properties, "$.page")) IS 'product-detail'
-LEFT JOIN events as after
-ON after.session_id = events.session_id
-    AND after.created > events.created
-    AND JSON_UNQUOTE(JSON_EXTRACT(properties, "$.page")) IS 'checkout'
-GROUP BY JSON_EXTRACT(properties, "$.page")
+  'conversion' as label,
+  COUNT(DISTINCT product_page.session_id) as product_detail_count,
+  COUNT(DISTINCT checkout_page.session_id) as checkout_count,
+  COUNT(DISTINCT checkout_page.session_id)::decimal / COUNT(DISTINCT product_page.session_id)::decimal as conversion
+FROM sessions
+LEFT JOIN events as product_page
+  ON product_page.session_id = sessions.id
+  AND product_page.properties->>'page' = 'product-detail'
+LEFT JOIN events as checkout_page
+  ON checkout_page.session_id = sessions.id
+  AND checkout_page.properties->>'page' = 'checkout'
+  AND checkout_page.created > product_page.created
+GROUP BY label
 ```

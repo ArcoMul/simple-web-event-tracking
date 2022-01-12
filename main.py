@@ -5,19 +5,14 @@ import json
 from fastapi import Cookie, FastAPI, Header
 from fastapi.responses import JSONResponse
 
-import pymysql
-from pymysql import cursors
+import psycopg2
 
 
-connection = pymysql.connect(
-    host="mariadb",
-    port=3306,
-    user="testuser",
-    password="testpassword",
+connection = psycopg2.connect(
+    host="postgres",
     database="simple-web-event-tracking",
-    charset="utf8mb4",
-    cursorclass=cursors.DictCursor,
-)
+    user="postgres",
+    password="testpassword")
 
 
 app = FastAPI()
@@ -25,10 +20,12 @@ app = FastAPI()
 
 def create_session(user_agent) -> int:
     with connection.cursor() as cursor:
-        query = "INSERT INTO `sessions` (`user_agent`) VALUES (%s)"
+        query = "INSERT INTO sessions (user_agent) VALUES (%s) RETURNING id"
         cursor.execute(query, (user_agent,))
+        session_id = cursor.fetchone()[0]
     connection.commit()
-    return cursor.lastrowid
+    print('create_session session_id', session_id)
+    return session_id
 
 
 def insert_event(session_id, json_data):
@@ -63,7 +60,7 @@ def read_image(
 @app.get("/events")
 def read_events():
     with connection.cursor() as cursor:
-        query = """SELECT * FROM `events`"""
+        query = """SELECT * FROM events"""
         cursor.execute(query)
         results = cursor.fetchall()
     return results
@@ -72,7 +69,7 @@ def read_events():
 @app.get("/sessions")
 def read_sessions():
     with connection.cursor() as cursor:
-        query = """SELECT * FROM `sessions`"""
+        query = """SELECT * FROM sessions"""
         cursor.execute(query)
         results = cursor.fetchall()
     return results
@@ -89,7 +86,12 @@ def most_visited_urls():
 @app.get("/use-cases/most-visited-pages")
 def most_visited_pages():
     with connection.cursor() as cursor:
-        query = """SELECT JSON_UNQUOTE(JSON_EXTRACT(properties, "$.page")) as page, COUNT(*) as count FROM events GROUP BY JSON_EXTRACT(properties, "$.page") ORDER BY count DESC"""
+        query = """
+            SELECT properties->>'page' as page, COUNT(*) as count
+            FROM events
+            GROUP BY properties->>'page'
+            ORDER BY count DESC
+        """
         cursor.execute(query)
         results = cursor.fetchall()
     return results
@@ -98,30 +100,18 @@ def most_visited_pages():
 def product_page_conversion():
     with connection.cursor() as cursor:
         query = """
-            SELECT DISTINCT
-                JSON_UNQUOTE(JSON_EXTRACT(events.properties, "$.page")) as page,
-                COUNT(events.id) as product_detail_count,
-                COUNT(after.id) as checkout_count,
-                COUNT(after.id) / COUNT(events.id) as conversion
-            FROM events
-            LEFT JOIN events as after
-            ON after.session_id = events.session_id
-                AND after.created > events.created
-                AND JSON_UNQUOTE(JSON_EXTRACT(after.properties, "$.page")) = "checkout"
-            WHERE JSON_UNQUOTE(JSON_EXTRACT(events.properties, "$.page")) = "product-detail"
-            GROUP BY JSON_EXTRACT(events.properties, "$.page")"""
-        query = """
             SELECT
                 'conversion' as label,
                 COUNT(DISTINCT product_page.session_id) as product_detail_count,
-                COUNT(DISTINCT checkout_page.session_id) as checkout_count
+                COUNT(DISTINCT checkout_page.session_id) as checkout_count,
+                COUNT(DISTINCT checkout_page.session_id)::decimal / COUNT(DISTINCT product_page.session_id)::decimal as conversion
             FROM sessions
             LEFT JOIN events as product_page
                 ON product_page.session_id = sessions.id
-                AND JSON_UNQUOTE(JSON_EXTRACT(product_page.properties, "$.page")) = "product-detail"
+                AND product_page.properties->>'page' = 'product-detail'
             LEFT JOIN events as checkout_page
                 ON checkout_page.session_id = sessions.id
-                AND JSON_UNQUOTE(JSON_EXTRACT(checkout_page.properties, "$.page")) = "checkout"
+                AND checkout_page.properties->>'page' = 'checkout'
                 AND checkout_page.created > product_page.created
             GROUP BY label"""
         cursor.execute(query)
