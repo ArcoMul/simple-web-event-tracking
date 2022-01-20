@@ -1,10 +1,16 @@
 # simple-web-event-tracking
 
-Simple implementation to start tracking browser events in an SQL database.
+Simple implementation to track browser events in a Postgres SQL database.
+
+✅ Tracks events with freeform properties  
+✅ Tracks unique sessions  
+✅ Lightweight browser script (<1kb)  
+✅ Blocks crawlers using [crawlerdetect](https://github.com/moskrc/crawlerdetect)  
+✅ Stores data in Postgres Database, with freeform data in a JSON column  
 
 ## Setup
 
-Including the following script on your page:
+Include the following script on your pages:
 
 ```html
 <script>
@@ -12,7 +18,7 @@ Including the following script on your page:
     var d={name:n,url:location.pathname+location.search,properties:p};
     var e=btoa(JSON.stringify(d));
     var i=new Image();
-    i.src="http://localhost:3000/image?d="+e;
+    i.src="<url of event tracking hosting>/image?d="+e;
   }
 </script>
 ```
