@@ -8,6 +8,11 @@ from fastapi.responses import JSONResponse
 import psycopg2
 from psycopg2.extras import RealDictCursor
 
+from crawlerdetect import CrawlerDetect
+
+
+crawler_detect = CrawlerDetect()
+
 
 connection = psycopg2.connect(
     host="postgres",
@@ -47,12 +52,27 @@ def get_root():
 def get_image(
     d: str, user_agent: Optional[str] = Header(None), s_id: Optional[int] = Cookie(None)
 ):
+    # Block crawlers
+    if crawler_detect.isCrawler(user_agent):
+        return JSONResponse()
+
+    # Get data from query parameter
     data = base64.b64decode(d)
+    if len(data) > 1024:
+        print("ERROR: received more than 1024 characters as event json payload")
+        return JSONResponse()
+
+    # Convert json string to dict
     json_data = json.loads(data)
-    print(json_data)
+
+    # Create session if visitor doesn't have a cookie yet
     if not s_id:
         s_id = create_session(user_agent)
+
+    # Create event
     insert_event(s_id, json_data)
+
+    # Send response with session cookie
     response = JSONResponse({"success": True})
     response.set_cookie(key="s_id", value=str(s_id), samesite='Lax')
     return response
@@ -92,6 +112,7 @@ def get_most_visited_urls():
         results = cursor.fetchall()
     return results
 
+
 @app.get("/use-cases/most-visited-pages")
 def get_most_visited_pages():
     with connection.cursor(cursor_factory=RealDictCursor) as cursor:
@@ -104,6 +125,7 @@ def get_most_visited_pages():
         cursor.execute(query)
         results = cursor.fetchall()
     return results
+
 
 @app.get("/use-cases/product-page-conversion")
 def get_product_page_conversion():
