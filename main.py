@@ -6,6 +6,7 @@ from fastapi import Cookie, FastAPI, Header
 from fastapi.responses import JSONResponse
 
 import psycopg2
+from psycopg2.extras import RealDictCursor
 
 
 connection = psycopg2.connect(
@@ -38,12 +39,12 @@ def insert_event(session_id, json_data):
 
 
 @app.get("/")
-def read_root():
+def get_root():
     return {"Hello": "World"}
 
 
 @app.get("/image")
-def read_image(
+def get_image(
     d: str, user_agent: Optional[str] = Header(None), s_id: Optional[int] = Cookie(None)
 ):
     data = base64.b64decode(d)
@@ -53,13 +54,13 @@ def read_image(
         s_id = create_session(user_agent)
     insert_event(s_id, json_data)
     response = JSONResponse({"success": True})
-    response.set_cookie(key="s_id", value=str(s_id), samesite='None')
+    response.set_cookie(key="s_id", value=str(s_id), samesite='Lax')
     return response
 
 
 @app.get("/events")
-def read_events():
-    with connection.cursor() as cursor:
+def get_events():
+    with connection.cursor(cursor_factory=RealDictCursor) as cursor:
         query = """SELECT * FROM events"""
         cursor.execute(query)
         results = cursor.fetchall()
@@ -67,25 +68,33 @@ def read_events():
 
 
 @app.get("/sessions")
-def read_sessions():
-    with connection.cursor() as cursor:
+def get_sessions():
+    with connection.cursor(cursor_factory=RealDictCursor) as cursor:
         query = """SELECT * FROM sessions"""
         cursor.execute(query)
         results = cursor.fetchall()
     return results
 
 
+@app.get("/reset")
+def get_reset():
+    with connection.cursor(cursor_factory=RealDictCursor) as cursor:
+        query = """TRUNCATE TABLE sessions; TRUNCATE TABLE events"""
+        cursor.execute(query)
+    return JSONResponse({ "success": True })
+
+
 @app.get("/use-cases/most-visited-urls")
-def most_visited_urls():
-    with connection.cursor() as cursor:
+def get_most_visited_urls():
+    with connection.cursor(cursor_factory=RealDictCursor) as cursor:
         query = """SELECT url, COUNT(*) as count FROM events GROUP BY url ORDER BY count DESC"""
         cursor.execute(query)
         results = cursor.fetchall()
     return results
 
 @app.get("/use-cases/most-visited-pages")
-def most_visited_pages():
-    with connection.cursor() as cursor:
+def get_most_visited_pages():
+    with connection.cursor(cursor_factory=RealDictCursor) as cursor:
         query = """
             SELECT properties->>'page' as page, COUNT(*) as count
             FROM events
@@ -97,23 +106,64 @@ def most_visited_pages():
     return results
 
 @app.get("/use-cases/product-page-conversion")
-def product_page_conversion():
-    with connection.cursor() as cursor:
+def get_product_page_conversion():
+    with connection.cursor(cursor_factory=RealDictCursor) as cursor:
+        # Simple - visitors entering the funnel in a later step also get counted
         query = """
             SELECT
-                'conversion' as label,
-                COUNT(DISTINCT product_page.session_id) as product_detail_count,
-                COUNT(DISTINCT checkout_page.session_id) as checkout_count,
-                COUNT(DISTINCT checkout_page.session_id)::decimal / COUNT(DISTINCT product_page.session_id)::decimal as conversion
-            FROM sessions
-            LEFT JOIN events as product_page
-                ON product_page.session_id = sessions.id
-                AND product_page.properties->>'page' = 'product-detail'
-            LEFT JOIN events as checkout_page
-                ON checkout_page.session_id = sessions.id
-                AND checkout_page.properties->>'page' = 'checkout'
-                AND checkout_page.created > product_page.created
-            GROUP BY label"""
+                properties->>'page' as step,
+                COUNT(DISTINCT session_id) as value
+            FROM events
+            WHERE properties->>'page' = 'product-detail' OR properties->>'page' = 'checkout'
+            GROUP BY properties->>'page'
+            ORDER BY value DESC
+        """
+
+        # Accurate - only visitors entering the funnel at the start
+        query = """
+            SELECT
+                unnest(array['index', 'product', 'checkout']) as step,
+                unnest(array[
+                    COUNT(DISTINCT index.session_id),
+                    COUNT(DISTINCT product.session_id),
+                    COUNT(DISTINCT checkout.session_id)
+                ]) as value
+            FROM events AS index
+            LEFT JOIN events AS product
+                ON product.session_id = index.session_id 
+                AND product.properties->>'page' = 'product-detail'
+                AND product.created > index.created
+            LEFT JOIN events AS checkout
+                ON checkout.session_id = index.session_id 
+                AND checkout.properties->>'page' = 'checkout'
+                AND checkout.created > product.created
+            WHERE index.name = 'page' AND index.properties->>'page' = 'index'
+        """
+        cursor.execute(query)
+        results = cursor.fetchall()
+    return results
+
+
+@app.get("/use-cases/bounce-rate")
+def get_bounce_rate():
+    with connection.cursor(cursor_factory=RealDictCursor) as cursor:
+        query = """
+            SELECT 
+                properties->>'page' as page,
+                COUNT(id) AS total,
+                COUNT(DISTINCT events.session_id) AS unique,
+                COUNT(sessions.session_id) AS bounces
+            FROM events
+            LEFT JOIN (
+                /* Get sessions and the number of pages visited */
+                SELECT session_id, COUNT(id) as count
+                FROM events
+                GROUP BY session_id
+            ) as sessions ON sessions.session_id = events.session_id AND sessions.count = 1
+            WHERE name = 'page'
+            GROUP BY properties->>'page'
+            ORDER BY total DESC
+        """
         cursor.execute(query)
         results = cursor.fetchall()
     return results

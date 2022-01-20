@@ -34,7 +34,7 @@ track('order button click', { category: 'laptops' })
 Session
 -------
 id
-started
+started: timestamp
 ```
 
 ```
@@ -90,17 +90,42 @@ track('page', { page: 'product-detail' })
 
 ```sql
 SELECT
-  'conversion' as label,
-  COUNT(DISTINCT product_page.session_id) as product_detail_count,
-  COUNT(DISTINCT checkout_page.session_id) as checkout_count,
-  COUNT(DISTINCT checkout_page.session_id)::decimal / COUNT(DISTINCT product_page.session_id)::decimal as conversion
-FROM sessions
-LEFT JOIN events as product_page
-  ON product_page.session_id = sessions.id
-  AND product_page.properties->>'page' = 'product-detail'
-LEFT JOIN events as checkout_page
-  ON checkout_page.session_id = sessions.id
-  AND checkout_page.properties->>'page' = 'checkout'
-  AND checkout_page.created > product_page.created
-GROUP BY label
+  unnest(array['index', 'product', 'checkout']) as step,
+  unnest(array[
+      COUNT(DISTINCT index.session_id),
+      COUNT(DISTINCT product.session_id),
+      COUNT(DISTINCT checkout.session_id)
+  ]) as value
+FROM events AS index
+LEFT JOIN events AS product
+  ON product.session_id = index.session_id 
+  AND product.properties->>'page' = 'product-detail'
+  AND product.created > index.created
+LEFT JOIN events AS checkout
+  ON checkout.session_id = index.session_id 
+  AND checkout.properties->>'page' = 'checkout'
+  AND checkout.created > product.created
+WHERE index.name = 'page' AND index.properties->>'page' = 'index'
+```
+
+### Tracking bounce rate
+
+Using the same tracking settings as the page conversion example
+
+```sql
+SELECT 
+    properties->>'page' as page,
+    COUNT(id) AS total,
+    COUNT(DISTINCT events.session_id) AS unique,
+    COUNT(sessions.session_id) AS bounces
+FROM events
+LEFT JOIN (
+    /* Get sessions and the number of pages visited */
+    SELECT session_id, COUNT(id) as count
+    FROM events
+    GROUP BY session_id
+) as sessions ON sessions.session_id = events.session_id AND sessions.count = 1
+WHERE name = 'page'
+GROUP BY properties->>'page'
+ORDER BY total DESC
 ```
