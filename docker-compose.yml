@@ -17,10 +17,10 @@ services:
     environment:
       - HOST=0.0.0.0
       - PORT=3000
-      - DB_HOST=postgres
-      - DB_PORT=5432
-      - DB_USER=postgres
-      - DB_PASSWORD=testpassword
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=5432
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=testpassword
       - DB_NAME=simple-web-event-tracking
       - PYTHONDONTWRITEBYTECODE=1
   

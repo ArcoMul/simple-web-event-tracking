@@ -1,1 +1,1 @@
-yoyo apply --no-config-file --database mysql://$DB_USER:$DB_PASSWORD@$DB_HOST:$DB_PORT/$DB_NAME ./migrations
+yoyo apply --no-config-file --database mysql://$POSTGRES_USER:$POSTGRES_PASSWORD@$POSTGRES_HOST:$POSTGRES_PORT/$DB_NAME ./migrations
