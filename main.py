@@ -82,7 +82,7 @@ def get_image(
 
     # Send response with session cookie
     response = JSONResponse({"success": True})
-    response.set_cookie(key="s_id", value=str(s_id), samesite="Lax")
+    response.set_cookie(key="s_id", value=str(s_id), samesite="None", secure=True)
     return response
 
 
