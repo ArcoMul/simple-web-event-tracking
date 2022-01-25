@@ -27,7 +27,7 @@ connection = psycopg2.connect(
 app = FastAPI()
 
 
-def create_session(user_agent) -> int:
+def create_session(user_agent: Optional[str]) -> str:
     with connection.cursor() as cursor:
         query = "INSERT INTO sessions (user_agent) VALUES (%s) RETURNING id"
         cursor.execute(query, (user_agent,))
@@ -36,7 +36,7 @@ def create_session(user_agent) -> int:
     return session_id
 
 
-def insert_event(session_id, json_data):
+def insert_event(session_id: str, json_data: dict) -> None:
     with connection.cursor() as cursor:
         query = "INSERT INTO events (name, session_id, url, properties) VALUES (%s, %s, %s, %s)"
         cursor.execute(
@@ -58,14 +58,14 @@ def get_root():
 
 @app.get("/image")
 def get_image(
-    d: str, user_agent: Optional[str] = Header(None), s_id: Optional[int] = Cookie(None)
+    d: str, user_agent: Optional[str] = Header(None), s_id: Optional[str] = Cookie(None)
 ):
     # Block crawlers
     if crawler_detect.isCrawler(user_agent):
         return JSONResponse()
 
     # Get data from query parameter
-    data = base64.b64decode(d)
+    data: bytes = base64.b64decode(d)
     if len(data) > 1024:
         print("ERROR: received more than 1024 characters as event json payload")
         return JSONResponse()
