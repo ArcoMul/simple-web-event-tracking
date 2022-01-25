@@ -48,27 +48,34 @@ connection = psycopg2.connect(
 app = FastAPI()
 
 
-def create_session(user_agent: Optional[str]) -> str:
-    with connection.cursor() as cursor:
-        query = "INSERT INTO sessions (user_agent) VALUES (%s) RETURNING id"
-        cursor.execute(query, (user_agent,))
-        session_id = cursor.fetchone()[0]
-    return session_id
+def create_session(user_agent: Optional[str]) -> Optional[str]:
+    try:
+        with connection.cursor() as cursor:
+            query = "INSERT INTO sessions (user_agent) VALUES (%s) RETURNING id"
+            cursor.execute(query, (user_agent,))
+            session_id = cursor.fetchone()[0]
+        return session_id
+    except:
+        connection.rollback()
+        return None
 
 
 def insert_event(session_id: str, json_data: dict, first_event: bool) -> None:
-    with connection.cursor() as cursor:
-        query = "INSERT INTO events (name, session_id, first_event, url, properties) VALUES (%s, %s, %s, %s, %s)"
-        cursor.execute(
-            query,
-            (
-                json_data["name"],
-                session_id,
-                first_event,
-                json_data["url"],
-                json.dumps(json_data["properties"]),
-            ),
-        )
+    try:
+        with connection.cursor() as cursor:
+            query = "INSERT INTO events (name, session_id, first_event, url, properties) VALUES (%s, %s, %s, %s, %s)"
+            cursor.execute(
+                query,
+                (
+                    json_data["name"],
+                    session_id,
+                    first_event,
+                    json_data["url"],
+                    json.dumps(json_data["properties"]),
+                ),
+            )
+    except:
+        connection.rollback()
 
 
 @app.get("/")
@@ -105,6 +112,10 @@ def get_image(
     if not s_id:
         first_event = True
         s_id = create_session(user_agent)
+
+    if not s_id:
+        print('error creating session')
+        return JSONResponse()
 
     # Create event
     insert_event(s_id, json_data, first_event)
