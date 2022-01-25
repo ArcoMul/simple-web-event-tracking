@@ -29,13 +29,6 @@ Track using, or change the function name to anything else:
 track('visit', { page: 'product-detail', version: 'b' })
 ```
 
-## Special events
-
-### visit
-
-An event called `visit` is special as the first incoming visit for a session will have the 
-property Events.first_visit set to true.
-
 ## API
 
 `track(name: String, properties: Object)`
@@ -43,7 +36,7 @@ property Events.first_visit set to true.
 Examples:
 
 ```js
-track('page')
+track('visit')
 track('order button click', { category: 'laptops' })
 ```
 
