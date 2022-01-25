@@ -72,7 +72,11 @@ track('visit')
 ```
 
 ```sql
-SELECT url, COUNT(*) as count FROM events GROUP BY url ORDER BY count DESC
+SELECT url, COUNT(*) as count
+FROM events
+WHERE name = 'visit'
+GROUP BY url
+ORDER BY count DESC
 ```
 
 ### Track most visited pages
@@ -85,8 +89,9 @@ track('visit', { page: 'product-detail' })
 ```
 
 ```sql
-SELECT properties->>'visit' as page, COUNT(*) as count
+SELECT properties->>'page' as page, COUNT(*) as count
 FROM events
+WHERE name = 'visit'
 GROUP BY properties->>'page'
 ORDER BY count DESC
 ```
