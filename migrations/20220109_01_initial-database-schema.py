@@ -24,6 +24,7 @@ steps = [
             session_id UUID,
             created TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
             name VARCHAR(50) NOT NULL,
+            first_event BOOLEAN,
             url VARCHAR(255),
             properties JSON
         );""",

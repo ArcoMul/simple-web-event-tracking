@@ -23,6 +23,19 @@ Include the following script on your pages:
 </script>
 ```
 
+Track using, or change the function name to anything else:
+
+```js
+track('visit', { page: 'product-detail', version: 'b' })
+```
+
+## Special events
+
+### visit
+
+An event called `visit` is special as the first incoming visit for a session will have the 
+property Events.first_visit set to true.
+
 ## API
 
 `track(name: String, properties: Object)`
@@ -39,15 +52,15 @@ track('order button click', { category: 'laptops' })
 ```
 Session
 -------
-id
+id: uuid
 started: timestamp
 ```
 
 ```
 Event
 -----
-id
-session_id
+id: serial
+session_id: uuid
 created: timestamp
 name: string
 url: string?
@@ -62,7 +75,7 @@ Add a simple track event to every page load, possibly add a page name
 to every event to group the same type of pages
 
 ```js
-track('page')
+track('visit')
 ```
 
 ```sql
@@ -75,11 +88,11 @@ Add a track event to every page load, add a page name
 to every event to group the same type of pages
 
 ```js
-track('page', { page: 'product-detail' })
+track('visit', { page: 'product-detail' })
 ```
 
 ```sql
-SELECT properties->>'page' as page, COUNT(*) as count
+SELECT properties->>'visit' as page, COUNT(*) as count
 FROM events
 GROUP BY properties->>'page'
 ORDER BY count DESC
@@ -91,7 +104,7 @@ Add a track event to every page load, include a page name. Find
 out later events using a join
 
 ```js
-track('page', { page: 'product-detail' })
+track('visit', { page: 'product-detail' })
 ```
 
 ```sql
@@ -111,7 +124,7 @@ LEFT JOIN events AS checkout
   ON checkout.session_id = index.session_id 
   AND checkout.properties->>'page' = 'checkout'
   AND checkout.created > product.created
-WHERE index.name = 'page' AND index.properties->>'page' = 'index'
+WHERE index.name = 'visit' AND index.properties->>'page' = 'index'
 ```
 
 ### Tracking bounce rate
@@ -131,7 +144,7 @@ LEFT JOIN (
     FROM events
     GROUP BY session_id
 ) as sessions ON sessions.session_id = events.session_id AND sessions.count = 1
-WHERE name = 'page'
+WHERE name = 'visit'
 GROUP BY properties->>'page'
 ORDER BY total DESC
 ```

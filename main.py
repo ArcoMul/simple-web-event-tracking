@@ -24,7 +24,14 @@ try:
 except FileNotFoundError as err:
     print('No config.yml found')
 
+if not config:
+    config = {}
+
 print("config", config)
+
+blocked_ips:'list[str]' = []
+if ('blocked_ips' in config):
+    blocked_ips = config['blocked_ips'] if config['blocked_ips'] != None else []
 
 crawler_detect = CrawlerDetect()
 
@@ -50,14 +57,15 @@ def create_session(user_agent: Optional[str]) -> str:
     return session_id
 
 
-def insert_event(session_id: str, json_data: dict) -> None:
+def insert_event(session_id: str, json_data: dict, first_event: bool) -> None:
     with connection.cursor() as cursor:
-        query = "INSERT INTO events (name, session_id, url, properties) VALUES (%s, %s, %s, %s)"
+        query = "INSERT INTO events (name, session_id, first_event, url, properties) VALUES (%s, %s, %s, %s, %s)"
         cursor.execute(
             query,
             (
                 json_data["name"],
                 session_id,
+                first_event,
                 json_data["url"],
                 json.dumps(json_data["properties"]),
             ),
@@ -81,7 +89,7 @@ def get_image(
     
     # Block certain ips
     ip = request.client.host
-    if ('blocked_ips' in config and ip in config['blocked_ips']):
+    if (ip in blocked_ips):
         print('blocked ip', ip)
         return JSONResponse()
 
@@ -95,11 +103,13 @@ def get_image(
     json_data = json.loads(data)
 
     # Create session if visitor doesn't have a cookie yet
+    first_event = False
     if not s_id:
+        first_event = True
         s_id = create_session(user_agent)
 
     # Create event
-    insert_event(s_id, json_data)
+    insert_event(s_id, json_data, first_event)
 
     # Send response with session cookie
     response = JSONResponse({"success": True})
