@@ -3,3 +3,5 @@ uvicorn==0.16.0
 yoyo-migrations==7.3.2
 psycopg2-binary==2.9.3 
 crawlerdetect==0.1.4
+PyYAML==6.0
+watchgod==0.7

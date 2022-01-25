@@ -1,9 +1,9 @@
 import os
-from typing import Optional
+from typing import Optional, Any
 import base64
 import json
 
-from fastapi import Cookie, FastAPI, Header
+from fastapi import Cookie, FastAPI, Header, Request
 from fastapi.responses import JSONResponse
 
 import psycopg2
@@ -11,6 +11,20 @@ from psycopg2.extras import RealDictCursor
 
 from crawlerdetect import CrawlerDetect
 
+import yaml
+
+config: Any = {}
+
+try:
+    with open('config.yml') as file:
+        try:
+            config = yaml.safe_load(file)   
+        except yaml.YAMLError as exc:
+            print(exc)
+except FileNotFoundError as err:
+    print('No config.yml found')
+
+print("config", config)
 
 crawler_detect = CrawlerDetect()
 
@@ -58,10 +72,17 @@ def get_root():
 
 @app.get("/image")
 def get_image(
-    d: str, user_agent: Optional[str] = Header(None), s_id: Optional[str] = Cookie(None)
+    request: Request, d: str, user_agent: Optional[str] = Header(None), s_id: Optional[str] = Cookie(None)
 ):
     # Block crawlers
     if crawler_detect.isCrawler(user_agent):
+        print('ignored crawler')
+        return JSONResponse()
+    
+    # Block certain ips
+    ip = request.client.host
+    if ('blocked_ips' in config and ip in config['blocked_ips']):
+        print('blocked ip', ip)
         return JSONResponse()
 
     # Get data from query parameter

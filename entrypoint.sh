@@ -7,4 +7,4 @@
 yoyo apply --database postgresql://$POSTGRES_USER:$POSTGRES_PASSWORD@$POSTGRES_HOST:$POSTGRES_PORT/$DB_NAME ./migrations
 
 # Start app
-uvicorn main:app --host $HOST --port $PORT --reload
+uvicorn main:app --host $HOST --port $PORT --reload --reload-include '*.yml'
