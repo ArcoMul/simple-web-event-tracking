@@ -53,7 +53,6 @@ def create_session(user_agent: Optional[str]) -> str:
         query = "INSERT INTO sessions (user_agent) VALUES (%s) RETURNING id"
         cursor.execute(query, (user_agent,))
         session_id = cursor.fetchone()[0]
-    connection.commit()
     return session_id
 
 
@@ -70,7 +69,6 @@ def insert_event(session_id: str, json_data: dict, first_event: bool) -> None:
                 json.dumps(json_data["properties"]),
             ),
         )
-    connection.commit()
 
 
 @app.get("/")
