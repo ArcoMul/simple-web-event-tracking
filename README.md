@@ -7,7 +7,7 @@ Simple implementation to track browser events in a Postgres SQL database.
 ✅ Lightweight browser script (<1kb)  
 ✅ Blocks crawlers using [crawlerdetect](https://github.com/moskrc/crawlerdetect)  
 ✅ Stores data in Postgres Database, with freeform data in a JSON column  
-❌ Fancy graphs and dashboards
+❌ Fancy graphs and dashboards  
 ❌ Query interface
 
 Recommended to use with [Redash](https://github.com/getredash/redash) or something alike.
