@@ -43,6 +43,7 @@ connection = psycopg2.connect(
     password=os.environ['POSTGRES_PASSWORD'],
     database=os.environ['DB_NAME'],
 )
+connection.set_session(autocommit=True)
 
 
 app = FastAPI()
@@ -54,7 +55,6 @@ def create_session(user_agent: Optional[str]) -> Optional[str]:
             query = "INSERT INTO sessions (user_agent) VALUES (%s) RETURNING id"
             cursor.execute(query, (user_agent,))
             session_id = cursor.fetchone()[0]
-        connection.commit()
         return session_id
     except:
         connection.rollback()
@@ -75,7 +75,6 @@ def insert_event(session_id: str, json_data: dict, first_event: bool) -> None:
                     json.dumps(json_data["properties"]),
                 ),
             )
-        connection.commit()
     except:
         connection.rollback()
 
