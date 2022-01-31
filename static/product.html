@@ -16,13 +16,13 @@
       <a href="checkout.html">Checkout</a>
     </p>
     <script>
-      function track(n, p) {
-        var d={name:n,url:location.pathname+location.search,properties:p};
-        var e=btoa(JSON.stringify(d));
-        var i=new Image();
-        i.src="http://localhost:3000/image?d="+e;
-      }
-      track('page', { page: 'product-detail' })
+      simpleTrack=(function(e,n){var r=[],a=!0;function i(){if(0!==r.length){a=!1;var n=new Image;n.onerror=i,n.src=e+"/image?d="+r.splice(0,1)[0]}else a=!0}return function(e,t){var o={name:e,url:location.pathname+location.search,properties:Object.assign({},n||{},t)};r.push(btoa(JSON.stringify(o))),a&&i()}})(
+        "http://localhost:3000",
+        {
+          environment: "production"
+        }
+      );
+      simpleTrack('page', { page: 'product-detail' })
     </script>
   </body>
 </html>

@@ -18,19 +18,20 @@ Include the following script on your pages:
 
 ```html
 <script>
-  function track(n, p) {
-    var d={name:n,url:location.pathname+location.search,properties:p};
-    var e=btoa(JSON.stringify(d));
-    var i=new Image();
-    i.src="<url of event tracking hosting>/image?d="+e;
-  }
+  simpleTrack=(function(e,n){var r=[],a=!0;function i(){if(0!==r.length){a=!1;var n=new Image;n.onerror=i,n.src=e+"/image?d="+r.splice(0,1)[0]}else a=!0}return function(e,t){var o={name:e,url:location.pathname+location.search,properties:Object.assign({},n||{},t)};r.push(btoa(JSON.stringify(o))),a&&i()}})(
+    "hostname of backend, ex: http://localhost:3000",
+    {
+      // any default properties to send with any event, ex:
+      environment: "production"
+    }
+  );
 </script>
 ```
 
 Track using, or change the function name to anything else:
 
 ```js
-track('visit', { page: 'product-detail', version: 'b' })
+simpleTrack('visit', { page: 'product-detail', version: 'b' })
 ```
 
 ## API
@@ -40,8 +41,8 @@ track('visit', { page: 'product-detail', version: 'b' })
 Examples:
 
 ```js
-track('visit')
-track('order button click', { category: 'laptops' })
+simpleTrack('visit')
+simpleTrack('order button click', { category: 'laptops' })
 ```
 
 ## Data structure
@@ -72,7 +73,7 @@ Add a simple track event to every page load, possibly add a page name
 to every event to group the same type of pages
 
 ```js
-track('visit')
+simpleTrack('visit')
 ```
 
 ```sql
@@ -89,7 +90,7 @@ Add a track event to every page load, add a page name
 to every event to group the same type of pages
 
 ```js
-track('visit', { page: 'product-detail' })
+simpleTrack('visit', { page: 'product-detail' })
 ```
 
 ```sql
@@ -106,7 +107,7 @@ Add a track event to every page load, include a page name. Find
 out later events using a join
 
 ```js
-track('visit', { page: 'product-detail' })
+simpleTrack('visit', { page: 'product-detail' })
 ```
 
 ```sql

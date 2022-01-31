@@ -13,13 +13,39 @@
       <li><a href="product.html">product</a></li>
     </ul>
     <script>
-      function track(n, p) {
-        var d={name:n,url:location.pathname+location.search,properties:p};
-        var e=btoa(JSON.stringify(d));
-        var i=new Image();
-        i.src="http://localhost:3000/image?d="+e;
-      }
-      track('page', { page: 'index' })
+      simpleTrack = (function (host, defaultProps) {
+        var queue = [];
+        var idle = true;
+        function track(name, properties) {
+          var data = {
+            name: name,
+            url: location.pathname + location.search,
+            properties: Object.assign({}, defaultProps || {}, properties),
+          };
+          queue.push(btoa(JSON.stringify(data)));
+          if (idle) {
+            handle();
+          }
+        }
+        function handle() {
+          if (queue.length === 0) {
+            idle = true;
+            return;
+          }
+          idle = false;
+          var img = new Image();
+          img.onerror = handle;
+          img.src = host + "/image?d=" + queue.splice(0, 1)[0];
+        }
+        return track;
+      })(
+        "http://localhost:3000", {
+        environment: "production",
+      });
+    </script>
+    <script>
+      simpleTrack("page", { page: "index" });
+      simpleTrack("ab_test", { version: Math.random() > 0.5 ? "a" : "b" });
     </script>
   </body>
 </html>
