@@ -18,36 +18,36 @@ import yaml
 config: Any = {}
 
 try:
-    with open('config.yml') as file:
+    with open("config.yml") as file:
         try:
-            config = yaml.safe_load(file)   
+            config = yaml.safe_load(file)
         except yaml.YAMLError as exc:
             print(exc)
 except FileNotFoundError as err:
-    print('No config.yml found')
+    print("No config.yml found")
 
 if not config:
     config = {}
 
 print("config", config)
 
-blocked_ips:'list[str]' = []
-if ('blocked_ips' in config):
-    blocked_ips = config['blocked_ips'] if config['blocked_ips'] != None else []
+blocked_ips: "list[str]" = []
+if "blocked_ips" in config:
+    blocked_ips = config["blocked_ips"] if config["blocked_ips"] != None else []
 
 crawler_detect = CrawlerDetect()
 
 
-username = os.environ['USERNAME']
-password = os.environ['PASSWORD']
+username = os.environ["USERNAME"]
+password = os.environ["PASSWORD"]
 
 
 connection = psycopg2.connect(
-    host=os.environ['POSTGRES_HOST'],
-    user=os.environ['POSTGRES_USER'],
-    port=os.environ['POSTGRES_PORT'],
-    password=os.environ['POSTGRES_PASSWORD'],
-    database=os.environ['DB_NAME'],
+    host=os.environ["POSTGRES_HOST"],
+    user=os.environ["POSTGRES_USER"],
+    port=os.environ["POSTGRES_PORT"],
+    password=os.environ["POSTGRES_PASSWORD"],
+    database=os.environ["DB_NAME"],
 )
 connection.set_session(autocommit=True)
 
@@ -106,17 +106,20 @@ def get_root():
 
 @app.get("/image")
 def get_image(
-    request: Request, d: str, user_agent: Optional[str] = Header(None), s_id: Optional[str] = Cookie(None)
+    request: Request,
+    d: str,
+    user_agent: Optional[str] = Header(None),
+    s_id: Optional[str] = Cookie(None),
 ):
     # Block crawlers
     if crawler_detect.isCrawler(user_agent):
-        print('ignored crawler')
+        print("ignored crawler")
         return JSONResponse()
-    
+
     # Block certain ips
     ip = request.client.host
-    if (ip in blocked_ips):
-        print('blocked ip', ip)
+    if ip in blocked_ips:
+        print("blocked ip", ip)
         return JSONResponse()
 
     # Get data from query parameter
@@ -135,7 +138,7 @@ def get_image(
         s_id = create_session(user_agent)
 
     if not s_id:
-        print('error creating session')
+        print("error creating session")
         return JSONResponse()
 
     # Create event
@@ -143,12 +146,14 @@ def get_image(
 
     # Send response with session cookie
     response = JSONResponse({"success": True})
-    response.set_cookie(key="s_id", value=str(s_id), samesite="None", secure=True)
+    response.set_cookie(
+        key="s_id", value=str(s_id), samesite="None", secure=True, max_age=1073741823
+    )
     return response
 
 
 @app.get("/events")
-def get_events(isAuthed = Depends(check_auth)):
+def get_events(isAuthed=Depends(check_auth)):
     with connection.cursor(cursor_factory=RealDictCursor) as cursor:
         query = """SELECT * FROM events"""
         cursor.execute(query)
@@ -157,7 +162,7 @@ def get_events(isAuthed = Depends(check_auth)):
 
 
 @app.get("/sessions")
-def get_sessions(isAuthed = Depends(check_auth)):
+def get_sessions(isAuthed=Depends(check_auth)):
     with connection.cursor(cursor_factory=RealDictCursor) as cursor:
         query = """SELECT * FROM sessions"""
         cursor.execute(query)
@@ -166,7 +171,7 @@ def get_sessions(isAuthed = Depends(check_auth)):
 
 
 @app.get("/reset")
-def get_reset(isAuthed = Depends(check_auth)):
+def get_reset(isAuthed=Depends(check_auth)):
     with connection.cursor(cursor_factory=RealDictCursor) as cursor:
         query = """TRUNCATE TABLE sessions; TRUNCATE TABLE events"""
         cursor.execute(query)
@@ -174,7 +179,7 @@ def get_reset(isAuthed = Depends(check_auth)):
 
 
 @app.get("/use-cases/most-visited-urls")
-def get_most_visited_urls(isAuthed = Depends(check_auth)):
+def get_most_visited_urls(isAuthed=Depends(check_auth)):
     with connection.cursor(cursor_factory=RealDictCursor) as cursor:
         query = """SELECT url, COUNT(*) as count FROM events GROUP BY url ORDER BY count DESC"""
         cursor.execute(query)
@@ -183,7 +188,7 @@ def get_most_visited_urls(isAuthed = Depends(check_auth)):
 
 
 @app.get("/use-cases/most-visited-pages")
-def get_most_visited_pages(isAuthed = Depends(check_auth)):
+def get_most_visited_pages(isAuthed=Depends(check_auth)):
     with connection.cursor(cursor_factory=RealDictCursor) as cursor:
         query = """
             SELECT properties->>'page' as page, COUNT(*) as count
@@ -197,7 +202,7 @@ def get_most_visited_pages(isAuthed = Depends(check_auth)):
 
 
 @app.get("/use-cases/product-page-conversion")
-def get_product_page_conversion(isAuthed = Depends(check_auth)):
+def get_product_page_conversion(isAuthed=Depends(check_auth)):
     with connection.cursor(cursor_factory=RealDictCursor) as cursor:
         # Simple - visitors entering the funnel in a later step also get counted
         query = """
@@ -236,7 +241,7 @@ def get_product_page_conversion(isAuthed = Depends(check_auth)):
 
 
 @app.get("/use-cases/bounce-rate")
-def get_bounce_rate(isAuthed = Depends(check_auth)):
+def get_bounce_rate(isAuthed=Depends(check_auth)):
     with connection.cursor(cursor_factory=RealDictCursor) as cursor:
         query = """
             SELECT 
