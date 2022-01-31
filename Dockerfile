@@ -2,6 +2,8 @@ FROM python:3.10.1-alpine3.15
 
 WORKDIR /app
 
+ENV PYTHONDONTWRITEBYTECODE=1
+
 RUN set -x \
   && apk update \
   && apk add --no-cache bash

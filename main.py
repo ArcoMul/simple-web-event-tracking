@@ -2,9 +2,11 @@ import os
 from typing import Optional, Any
 import base64
 import json
+import secrets
 
-from fastapi import Cookie, FastAPI, Header, Request
+from fastapi import Cookie, FastAPI, HTTPException, Header, Request, Depends, status
 from fastapi.responses import JSONResponse
+from fastapi.security import HTTPBasic, HTTPBasicCredentials
 
 import psycopg2
 from psycopg2.extras import RealDictCursor
@@ -36,6 +38,10 @@ if ('blocked_ips' in config):
 crawler_detect = CrawlerDetect()
 
 
+username = os.environ['USERNAME']
+password = os.environ['PASSWORD']
+
+
 connection = psycopg2.connect(
     host=os.environ['POSTGRES_HOST'],
     user=os.environ['POSTGRES_USER'],
@@ -47,6 +53,20 @@ connection.set_session(autocommit=True)
 
 
 app = FastAPI()
+
+security = HTTPBasic()
+
+
+def check_auth(credentials: HTTPBasicCredentials = Depends(security)):
+    correct_username = secrets.compare_digest(credentials.username, username)
+    correct_password = secrets.compare_digest(credentials.password, password)
+    if not (correct_username and correct_password):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Incorrect email or password",
+            headers={"WWW-Authenticate": "Basic"},
+        )
+    return True
 
 
 def create_session(user_agent: Optional[str]) -> Optional[str]:
@@ -128,7 +148,7 @@ def get_image(
 
 
 @app.get("/events")
-def get_events():
+def get_events(isAuthed = Depends(check_auth)):
     with connection.cursor(cursor_factory=RealDictCursor) as cursor:
         query = """SELECT * FROM events"""
         cursor.execute(query)
@@ -137,7 +157,7 @@ def get_events():
 
 
 @app.get("/sessions")
-def get_sessions():
+def get_sessions(isAuthed = Depends(check_auth)):
     with connection.cursor(cursor_factory=RealDictCursor) as cursor:
         query = """SELECT * FROM sessions"""
         cursor.execute(query)
@@ -146,7 +166,7 @@ def get_sessions():
 
 
 @app.get("/reset")
-def get_reset():
+def get_reset(isAuthed = Depends(check_auth)):
     with connection.cursor(cursor_factory=RealDictCursor) as cursor:
         query = """TRUNCATE TABLE sessions; TRUNCATE TABLE events"""
         cursor.execute(query)
@@ -154,7 +174,7 @@ def get_reset():
 
 
 @app.get("/use-cases/most-visited-urls")
-def get_most_visited_urls():
+def get_most_visited_urls(isAuthed = Depends(check_auth)):
     with connection.cursor(cursor_factory=RealDictCursor) as cursor:
         query = """SELECT url, COUNT(*) as count FROM events GROUP BY url ORDER BY count DESC"""
         cursor.execute(query)
@@ -163,7 +183,7 @@ def get_most_visited_urls():
 
 
 @app.get("/use-cases/most-visited-pages")
-def get_most_visited_pages():
+def get_most_visited_pages(isAuthed = Depends(check_auth)):
     with connection.cursor(cursor_factory=RealDictCursor) as cursor:
         query = """
             SELECT properties->>'page' as page, COUNT(*) as count
@@ -177,7 +197,7 @@ def get_most_visited_pages():
 
 
 @app.get("/use-cases/product-page-conversion")
-def get_product_page_conversion():
+def get_product_page_conversion(isAuthed = Depends(check_auth)):
     with connection.cursor(cursor_factory=RealDictCursor) as cursor:
         # Simple - visitors entering the funnel in a later step also get counted
         query = """
@@ -216,7 +236,7 @@ def get_product_page_conversion():
 
 
 @app.get("/use-cases/bounce-rate")
-def get_bounce_rate():
+def get_bounce_rate(isAuthed = Depends(check_auth)):
     with connection.cursor(cursor_factory=RealDictCursor) as cursor:
         query = """
             SELECT 

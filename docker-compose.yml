@@ -15,14 +15,18 @@ services:
     volumes:
       - .:/app
     environment:
+      # Hostname and port where the app runs
       - HOST=0.0.0.0
       - PORT=3000
+      # Username and password for protected pages
+      - USERNAME=test
+      - PASSWORD=test123abc
+      # Database settings
       - POSTGRES_HOST=postgres
       - POSTGRES_PORT=5432
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=testpassword
       - DB_NAME=simple-web-event-tracking
-      - PYTHONDONTWRITEBYTECODE=1
   
   postgres:
     image: postgres:9.6.24-alpine3.15
