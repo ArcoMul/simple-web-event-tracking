@@ -5,7 +5,7 @@ import json
 import secrets
 
 from fastapi import Cookie, FastAPI, HTTPException, Header, Request, Depends, status
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, FileResponse
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
 
 import psycopg2
@@ -111,22 +111,23 @@ def get_image(
     user_agent: Optional[str] = Header(None),
     s_id: Optional[str] = Cookie(None),
 ):
+    response = FileResponse('static/simple-image.jpg')
     # Block crawlers
     if crawler_detect.isCrawler(user_agent):
         print("ignored crawler")
-        return JSONResponse()
+        return response
 
     # Block certain ips
     ip = request.client.host
     if ip in blocked_ips:
         print("blocked ip", ip)
-        return JSONResponse()
+        return response
 
     # Get data from query parameter
     data: bytes = base64.b64decode(d)
     if len(data) > 1024:
         print("ERROR: received more than 1024 characters as event json payload")
-        return JSONResponse()
+        return response
 
     # Convert json string to dict
     json_data = json.loads(data)
@@ -139,13 +140,12 @@ def get_image(
 
     if not s_id:
         print("error creating session")
-        return JSONResponse()
+        return response
 
     # Create event
     insert_event(s_id, json_data, first_event)
 
     # Send response with session cookie
-    response = JSONResponse({"success": True})
     response.set_cookie(
         key="s_id", value=str(s_id), samesite="None", secure=True, max_age=1073741823
     )

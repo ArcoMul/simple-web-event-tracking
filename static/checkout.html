@@ -13,7 +13,7 @@
       <li><a href="product.html">product</a></li>
     </ul>
     <script>
-      simpleTrack=(function(e,n){var r=[],a=!0;function i(){if(0!==r.length){a=!1;var n=new Image;n.onerror=i,n.src=e+"/image?d="+r.splice(0,1)[0]}else a=!0}return function(e,t){var o={name:e,url:location.pathname+location.search,properties:Object.assign({},n||{},t)};r.push(btoa(JSON.stringify(o))),a&&i()}})(
+      simpleTrack=(function(r,a){var e=[],n=!0;function o(){if(0!==e.length){n=!1;var a=new Image;a.onerror=o,a.src=r+"/image?d="+e.splice(0,1)[0]+"&r="+Math.floor(1e4*Math.random())}else n=!0}return function(r,t){var i={name:r,url:location.pathname+location.search,properties:Object.assign({},a||{},t)};e.push(btoa(JSON.stringify(i))),n&&o()}})(
         "http://localhost:3000",
         {
           environment: "production"
