@@ -34,6 +34,7 @@
           }
           idle = false;
           var img = new Image();
+          img.onload = handle;
           img.onerror = handle;
           img.src = host + "/image?d=" + queue.splice(0, 1)[0] + '&r='+ Math.floor(Math.random() * 10000);
         }

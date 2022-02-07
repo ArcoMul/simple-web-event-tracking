@@ -16,7 +16,7 @@
       <a href="checkout.html">Checkout</a>
     </p>
     <script>
-      simpleTrack=(function(r,a){var e=[],n=!0;function o(){if(0!==e.length){n=!1;var a=new Image;a.onerror=o,a.src=r+"/image?d="+e.splice(0,1)[0]+"&r="+Math.floor(1e4*Math.random())}else n=!0}return function(r,t){var i={name:r,url:location.pathname+location.search,properties:Object.assign({},a||{},t)};e.push(btoa(JSON.stringify(i))),n&&o()}})(
+      simpleTrack=(function(a,n){var r=[],e=!0;function o(){if(0!==r.length){e=!1;var n=new Image;n.onload=o,n.onerror=o,n.src=a+"/image?d="+r.splice(0,1)[0]+"&r="+Math.floor(1e4*Math.random())}else e=!0}return function(a,t){var i={name:a,url:location.pathname+location.search,properties:Object.assign({},n||{},t)};r.push(btoa(JSON.stringify(i))),e&&o()}})(
         "http://localhost:3000",
         {
           environment: "production"
