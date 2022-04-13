@@ -170,10 +170,18 @@ def get_sessions(isAuthed=Depends(check_auth)):
     return results
 
 
-@app.get("/reset")
-def get_reset(isAuthed=Depends(check_auth)):
+@app.get("/reset-all")
+def get_reset_all(isAuthed=Depends(check_auth)):
     with connection.cursor(cursor_factory=RealDictCursor) as cursor:
         query = """TRUNCATE TABLE sessions; TRUNCATE TABLE events"""
+        cursor.execute(query)
+    return JSONResponse({"success": True})
+
+
+@app.get("/reset-events")
+def get_reset_events(isAuthed=Depends(check_auth)):
+    with connection.cursor(cursor_factory=RealDictCursor) as cursor:
+        query = """TRUNCATE TABLE events"""
         cursor.execute(query)
     return JSONResponse({"success": True})
 
